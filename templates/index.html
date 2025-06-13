@@ -3,9 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask 網頁</title>
+    <title>數值分析與演算作業</title>
+    <script>
+        function fetchTSMCData() {
+            fetch('/get_tsmc_data')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('tsmc-info').innerText = data.stock_info;
+                })
+                .catch(error => {
+                    console.error('Error fetching TSMC data:', error);
+                });
+        }
+    </script>
 </head>
 <body>
-    <h1>歡迎來到我的網頁</h1>
+    <h1>這裡是數值分析與演算作業</h1>
+    <button onclick="fetchTSMCData()">獲取台積電股票資訊</button>
+    <p id="tsmc-info"></p> <!-- 顯示台積電股票資訊 -->
+    <button onclick="location.href='/invoice-check'">前往 Invoice Check 分頁</button>
 </body>
 </html>
