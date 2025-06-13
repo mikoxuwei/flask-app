@@ -46,9 +46,9 @@ def get_tsmc_data():
     stock_info = f"{title.get_text()} : {a.get_text()}( {s}{b.text} )"
     return jsonify({"stock_info": stock_info})
 
-@app.route("/invoice-check")
-def invoice_check():
-    return render_template("invoice_check.html")
+# @app.route("/invoice-check")
+# def invoice_check():
+#     return render_template("invoice_check.html")
 
 if __name__ == '__main__':
     app.run(debug=True) # debug=True 代表開啟除錯模式，會自動重啟伺服器
