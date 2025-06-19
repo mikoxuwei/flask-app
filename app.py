@@ -108,6 +108,59 @@ def invoice_check():
     
     return jsonify({"result": result})
 
+@app.route("/currency_rate", methods=["GET"])
+def currency_rate():
+    url = 'http://rate.bot.com.tw/xrt/flcsv/0/day'  # 牌告匯率 CSV 網址
+    rate = requests.get(url) 
+    rate.encoding = 'utf-8'  # 設定編碼為 utf-8
+    rt = rate.text # 以文字模式讀取內容
+    rts = rt.split('\n')  # 以換行符號分割成列表
+    result = ""
+    for i in rts:
+        try:
+            a = i.split(',')  # 以逗號分割成列表
+            result = a[0] + ':' + a[12] #取出第一個(0)和第十三個項目(12)
+            rate = requests.get(url, timeout=10)  # 設定超時時間
+            rate.raise_for_status()  # 檢查 HTTP 回應狀態碼
+            result = rate.text
+        except requests.exceptions.RequestException as e:
+            result = f"連線失敗: {e}"
+        except: break  # 如果出現錯誤，則跳出迴圈
+
+    return jsonify({"result": result})
+
+@app.route("/get_currency_rate", methods=["GET"])
+def get_currency_rate():
+    url = 'https://rate.bot.com.tw/xrt/flcsv/0/day'  # 牌告匯率 CSV 網址
+    
+    try:
+        rate = requests.get(url, timeout=10) 
+        rate.encoding = 'utf-8'  # 設定編碼為 utf-8
+        rt = rate.text  # 以文字模式讀取內容
+        rts = rt.split('\n')  # 以換行符號分割成列表
+        
+        currency_rates = []
+        
+        # 跳過標題行
+        for i in rts[1:10]:  # 只處理前9個貨幣
+            try:
+                a = i.split(',')  # 以逗號分割成列表
+                if len(a) >= 13:  # 確認資料完整性
+                    currency_name = a[0]  # 貨幣名稱
+                    buying_rate = a[2]    # 現金買入
+                    selling_rate = a[12]  # 現金賣出
+                    currency_rates.append(f"{currency_name}: 買入 {buying_rate}, 賣出 {selling_rate}")
+            except Exception as e:
+                continue  # 跳過有問題的行
+                
+        result = "\n".join(currency_rates)
+        if not result:
+            result = "無法獲取匯率資料或資料格式有誤"
+            
+        return jsonify({"result": result})
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({"result": f"連線失敗: {e}"})
+
 if __name__ == '__main__':
     app.run(debug=True) # debug=True 代表開啟除錯模式，會自動重啟伺服器
-    # app.run(host='

@@ -37,18 +37,73 @@
                 document.getElementById('invoice-result').innerText = "發生錯誤，請稍後再試";
             });
         }
+
+        function fetchCurrencyRate() {
+            fetch('/get_currency_rate')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('currency-result').innerText = data.result;
+                })
+                .catch(error => {
+                    console.error('Error fetching currency rate:', error);
+                    document.getElementById('currency-result').innerText = "獲取匯率資料時發生錯誤";
+                });
+        }
     </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input[type=text] {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
     <h2>這是數值分析與演算的期末作業</h2>
-    <button onclick="fetchTSMCData()">獲取台積電股票資訊</button>
-    <p id="tsmc-info"></p> <!-- 顯示台積電股票資訊 -->
-    <h3>發票檢查功能</h3>
-    <form id="invoice-form" onsubmit="checkInvoice(event)">
-        <label for="invoice_number">請輸入發票號碼:</label>
-        <input type="text" id="invoice_number" name="invoice_number" required>
-        <button type="submit">檢查發票</button>
-    </form>
-    <p id="invoice-result"></p> <!-- 顯示發票檢查結果 -->
+    <div class="section">
+        <h3>台積電股票資訊</h3>
+        <button onclick="fetchTSMCData()">獲取台積電股票資訊</button>
+        <p id="tsmc-info"></p> <!-- 顯示台積電股票資訊 -->
+    </div>
+    
+    <div class="section">
+        <h3>發票檢查功能</h3>
+        <form id="invoice-form" onsubmit="checkInvoice(event)">
+            <label for="invoice_number">請輸入發票號碼:</label>
+            <input type="text" id="invoice_number" name="invoice_number" required>
+            <button type="submit">檢查發票</button>
+        </form>
+        <p id="invoice-result"></p> <!-- 顯示發票檢查結果 -->
+    </div>
+    
+    <div class="section">
+        <h3>即時匯率資訊</h3>
+        <button onclick="fetchCurrencyRate()">獲取最新匯率</button>
+        <p id="currency-result" style="white-space: pre-line;"></p> <!-- 顯示匯率結果，保留換行 -->
+    </div>
 </body>
 </html>
