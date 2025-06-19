@@ -21,6 +21,13 @@
     <h2>這是數值分析與演算的期末作業</h2>
     <button onclick="fetchTSMCData()">獲取台積電股票資訊</button>
     <p id="tsmc-info"></p> <!-- 顯示台積電股票資訊 -->
+    <h3>發票檢查功能</h3>
+    <form action="/invoice-check" method="post">
+        <label for="invoice_number">請輸入發票號碼:</label>
+        <input type="text" id="invoice_number" name="invoice_number" required>
+        <button type="submit">檢查發票</button>
+    </form>
+    <p id="invoice-result"></p> <!-- 顯示發票檢查結果 -->
     <!-- <button onclick="location.href='/invoice-check'">前往 Invoice Check 分頁</button> -->
 </body>
 </html>
