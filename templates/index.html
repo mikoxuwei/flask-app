@@ -15,6 +15,28 @@
                     console.error('Error fetching TSMC data:', error);
                 });
         }
+
+        function checkInvoice(event) {
+            event.preventDefault(); // 防止表單提交刷新頁面
+            
+            const invoiceNumber = document.getElementById('invoice_number').value;
+            
+            fetch('/invoice-check', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ invoice_number: invoiceNumber })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('invoice-result').innerText = data.result;
+            })
+            .catch(error => {
+                console.error('Error checking invoice:', error);
+                document.getElementById('invoice-result').innerText = "發生錯誤，請稍後再試";
+            });
+        }
     </script>
 </head>
 <body>
@@ -22,12 +44,11 @@
     <button onclick="fetchTSMCData()">獲取台積電股票資訊</button>
     <p id="tsmc-info"></p> <!-- 顯示台積電股票資訊 -->
     <h3>發票檢查功能</h3>
-    <form action="/invoice-check" method="post">
+    <form id="invoice-form" onsubmit="checkInvoice(event)">
         <label for="invoice_number">請輸入發票號碼:</label>
         <input type="text" id="invoice_number" name="invoice_number" required>
         <button type="submit">檢查發票</button>
     </form>
     <p id="invoice-result"></p> <!-- 顯示發票檢查結果 -->
-    <!-- <button onclick="location.href='/invoice-check'">前往 Invoice Check 分頁</button> -->
 </body>
 </html>
