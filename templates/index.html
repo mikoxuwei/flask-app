@@ -49,13 +49,27 @@
                     document.getElementById('currency-result').innerText = "獲取匯率資料時發生錯誤";
                 });
         }
-        <!-- 在 index.html 的 <script> 區塊添加這個函數 -->
+        
+        function toggleAttachment() {
+            const previewDiv = document.getElementById('attachment-preview');
+            if (previewDiv.style.display === 'none' || previewDiv.style.display === '') {
+                previewDiv.style.display = 'block';
+                document.getElementById('attachment-btn').textContent = '移除附件';
+                document.getElementById('has-attachment').value = 'true';
+            } else {
+                previewDiv.style.display = 'none';
+                document.getElementById('attachment-btn').textContent = '添加附件';
+                document.getElementById('has-attachment').value = 'false';
+            }
+        }
+        
         function sendEmail(event) {
             event.preventDefault(); // 防止表單提交刷新頁面
             
             const recipient = document.getElementById('recipient').value;
             const subject = document.getElementById('subject').value;
             const content = document.getElementById('content').value;
+            const hasAttachment = document.getElementById('has-attachment').value === 'true';
             
             document.getElementById('email-result').innerText = "正在發送郵件...";
             
@@ -67,7 +81,8 @@
                 body: JSON.stringify({
                     recipient: recipient,
                     subject: subject,
-                    content: content
+                    content: content,
+                    attachment: hasAttachment
                 })
             })
             .then(response => response.json())
@@ -104,10 +119,26 @@
         button:hover {
             background-color: #45a049;
         }
-        input[type=text] {
+        /* 統一所有輸入框樣式 */
+        input[type=text], input[type=email], textarea {
             padding: 8px;
             margin: 5px 0;
             border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        #attachment-preview {
+            margin-top: 10px;
+            max-width: 300px;
+            display: none;
+        }
+        #attachment-preview img {
+            width: 100%;
+            border: 1px solid #ddd;
             border-radius: 4px;
         }
     </style>
@@ -123,8 +154,10 @@
     <div class="section">
         <h3>發票檢查功能</h3>
         <form id="invoice-form" onsubmit="checkInvoice(event)">
-            <label for="invoice_number">請輸入發票號碼:</label>
-            <input type="text" id="invoice_number" name="invoice_number" required>
+            <div class="form-group">
+                <label for="invoice_number">請輸入發票號碼:</label>
+                <input type="text" id="invoice_number" name="invoice_number" required>
+            </div>
             <button type="submit">檢查發票</button>
         </form>
         <p id="invoice-result"></p> <!-- 顯示發票檢查結果 -->
@@ -135,25 +168,33 @@
         <button onclick="fetchCurrencyRate()">獲取最新匯率</button>
         <p id="currency-result" style="white-space: pre-line;"></p> <!-- 顯示匯率結果，保留換行 -->
     </div>
-    <!-- 在 index.html 的 body 中添加新區塊 -->
-<div class="section">
-    <h3>發送電子郵件</h3>
-    <form id="email-form" onsubmit="sendEmail(event)">
-        <div style="margin-bottom: 10px;">
-            <label for="recipient">收件者信箱:</label>
-            <input type="email" id="recipient" name="recipient" required style="width: 100%;">
-        </div>
-        <div style="margin-bottom: 10px;">
-            <label for="subject">郵件標題:</label>
-            <input type="text" id="subject" name="subject" required style="width: 100%;">
-        </div>
-        <div style="margin-bottom: 10px;">
-            <label for="content">郵件內容:</label>
-            <textarea id="content" name="content" rows="5" required style="width: 100%;"></textarea>
-        </div>
-        <button type="submit">發送郵件</button>
-    </form>
-    <p id="email-result"></p> <!-- 顯示郵件發送結果 -->
-</div>
+    
+    <div class="section">
+        <h3>發送電子郵件</h3>
+        <form id="email-form" onsubmit="sendEmail(event)">
+            <div class="form-group">
+                <label for="recipient">收件者信箱:</label>
+                <input type="email" id="recipient" name="recipient" required>
+            </div>
+            <div class="form-group">
+                <label for="subject">郵件標題:</label>
+                <input type="text" id="subject" name="subject" required>
+            </div>
+            <div class="form-group">
+                <label for="content">郵件內容:</label>
+                <textarea id="content" name="content" rows="5" required></textarea>
+            </div>
+            <div class="form-group">
+                <button type="button" id="attachment-btn" onclick="toggleAttachment()">添加附件</button>
+                <input type="hidden" id="has-attachment" value="false">
+                <div id="attachment-preview">
+                    <p>附件預覽：</p>
+                    <img src="https://i.pinimg.com/736x/b2/8a/14/b28a142abd680bd4506b5769bfc031d7.jpg" alt="附件圖片">
+                </div>
+            </div>
+            <button type="submit">發送郵件</button>
+        </form>
+        <p id="email-result"></p> <!-- 顯示郵件發送結果 -->
+    </div>
 </body>
 </html>

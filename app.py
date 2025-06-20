@@ -153,6 +153,7 @@ def send_email():
     recipient = data.get("recipient", "")
     subject = data.get("subject", "")
     content = data.get("content", "")
+    attachment = data.get("attachment", False)
     
     # 驗證輸入
     if not recipient or not subject or not content:
@@ -169,15 +170,29 @@ def send_email():
         msg = MIMEMultipart()
         msg.attach(MIMEText(html, "html", "utf-8"))  # 設定編碼為 utf-8
         
-        # 添加附件 (可選)
-        try:
-            with open("send_mail/cat.jpg", "rb") as file:
-                img = file.read()
-            attach_file = MIMEApplication(img, name="cat.jpg")  # 設定附件名稱
-            msg.attach(attach_file)
-        except:
-            # 如果找不到附件，忽略錯誤
-            pass
+        # 添加附件 (如果用戶選擇了附件)
+        if attachment:
+            # 從網路下載圖片
+            image_url = "https://i.pinimg.com/736x/b2/8a/14/b28a142abd680bd4506b5769bfc031d7.jpg"
+            try:
+                img_response = requests.get(image_url, timeout=10)
+                img_response.raise_for_status()  # 確保請求成功
+                img_data = img_response.content
+                
+                # 添加圖片作為附件
+                attach_file = MIMEApplication(img_data, name="cute_cat.jpg")
+                attach_file.add_header('Content-Disposition', 'attachment', filename="cute_cat.jpg")
+                msg.attach(attach_file)
+            except Exception as e:
+                print(f"獲取圖片失敗: {e}")
+                # 如果無法獲取線上圖片，嘗試使用本地圖片
+                try:
+                    with open("send_mail/cat.jpg", "rb") as file:
+                        img = file.read()
+                    attach_file = MIMEApplication(img, name="cat.jpg")
+                    msg.attach(attach_file)
+                except:
+                    pass  # 如果本地圖片也失敗，則不添加附件
 
         msg["From"] = "s2525123a@gmail.com"  # 寄件者
         msg["To"] = recipient  # 收件者
@@ -191,7 +206,8 @@ def send_email():
         status = smtp.sendmail(msg["From"], msg["To"], msg.as_string())  # 發送郵件
         smtp.quit()  # 關閉 SMTP 連線
         
-        return jsonify({"result": f"郵件已成功發送至 {recipient}"})
+        attach_msg = "（已附加可愛貓咪圖片）" if attachment else ""
+        return jsonify({"result": f"郵件已成功發送至 {recipient} {attach_msg}"})
         
     except Exception as e:
         return jsonify({"result": f"發送郵件時發生錯誤: {str(e)}"})
