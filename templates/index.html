@@ -1,43 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>數值分析與演算作業</title>
-    <script>
-        function fetchTSMCData() {
-            fetch('/get_tsmc_data')
-                .then(response => response.json())
-                .then(data => {
+    <meta charset="UTF-8"> <!-- 設定字符編碼為 UTF-8 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 設定響應式設計的視窗 -->
+    <title>數值分析與演算作業</title> <!-- 設定瀏覽器標籤頁的標題 -->
+    <!-- JavaScript 程式碼區塊 -->
+    <script> 
+        // 定義獲取台積電股票資料的函式
+        function fetchTSMCData() {           
+            fetch('/get_tsmc_data')  // 向伺服器發送 GET 請求到 /get_tsmc_data
+                .then(response => response.json())  // 將回應轉換為 JSON 格式
+                .then(data => {  // 處理接收到的資料
+                    // 將股票資訊顯示在指定的 HTML 元素中
                     document.getElementById('tsmc-info').innerText = data.stock_info;
                 })
-                .catch(error => {
+                
+                .catch(error => {  // 捕獲和處理錯誤
+                    // 在控制台輸出錯誤訊息
                     console.error('Error fetching TSMC data:', error);
+                    // 顯示錯誤訊息給使用者
+                    document.getElementById('tsmc-info').innerText = "獲取台積電資料時發生錯誤"; 
                 });
         }
-
+        // 定義檢查發票的函式
         function checkInvoice(event) {
             event.preventDefault(); // 防止表單提交刷新頁面
-            
+            // 獲取使用者輸入的發票號碼
             const invoiceNumber = document.getElementById('invoice_number').value;
-            
-            fetch('/invoice-check', {
+            fetch('/invoice-check', {  // 向伺服器發送 POST 請求到 /invoice-check 路由
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ invoice_number: invoiceNumber })
+                body: JSON.stringify({ invoice_number: invoiceNumber })  // 將發票號碼轉換為 JSON 格式
             })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('invoice-result').innerText = data.result;
-            })
-            .catch(error => {
-                console.error('Error checking invoice:', error);
-                document.getElementById('invoice-result').innerText = "發生錯誤，請稍後再試";
-            });
+                .then(response => response.json())
+                .then(data => {
+                    // 將檢查結果顯示在指定的 HTML 元素中
+                    document.getElementById('invoice-result').innerText = data.result;
+                    document.getElementById('invoice-period').innerText = `期別: ${data.period}`;
+                })
+                .catch(error => {
+                    console.error('Error checking invoice:', error);
+                    // 顯示錯誤訊息給使用者
+                    document.getElementById('invoice-result').innerText = "發生錯誤，請稍後再試";
+                    document.getElementById('invoice-period').innerText = "";  // 清空期別顯示        
+                });
         }
-
+        // 定義獲取匯率資料的函式
         function fetchCurrencyRate() {
             fetch('/get_currency_rate')
                 .then(response => response.json())
@@ -49,87 +60,94 @@
                     document.getElementById('currency-result').innerText = "獲取匯率資料時發生錯誤";
                 });
         }
-        
+        // 定義切換附件顯示的函式
         function toggleAttachment() {
-            const previewDiv = document.getElementById('attachment-preview');
-            if (previewDiv.style.display === 'none' || previewDiv.style.display === '') {
-                previewDiv.style.display = 'block';
-                document.getElementById('attachment-btn').textContent = '移除附件';
-                document.getElementById('has-attachment').value = 'true';
+            const previewDiv = document.getElementById('attachment-preview');  // 獲取附件預覽的 HTML 元素
+            if (previewDiv.style.display === 'none' || previewDiv.style.display === '') { // 如果附件預覽目前是隱藏的
+                previewDiv.style.display = 'block';  // 顯示附件預覽
+                document.getElementById('attachment-btn').textContent = '移除附件';  // 更改按鈕文字為"移除附件"
+                document.getElementById('has-attachment').value = 'true';  // 設定隱藏欄位的值為 true，表示有附件
             } else {
                 previewDiv.style.display = 'none';
-                document.getElementById('attachment-btn').textContent = '添加附件';
-                document.getElementById('has-attachment').value = 'false';
+                document.getElementById('attachment-btn').textContent = '添加附件';  // 更改按鈕文字為"添加附件"
+                document.getElementById('has-attachment').value = 'false';  // 設定隱藏欄位的值為 false，表示沒有附件
             }
         }
-        
-        // 修改 sendEmail 函數
+
+        // 定義發送郵件的函式
         function sendEmail(event) {
             event.preventDefault(); // 防止表單提交刷新頁面
-        
-            const recipient = document.getElementById('recipient').value;
-            const subject = document.getElementById('subject').value;
-            const content = document.getElementById('content').value;
-            const hasAttachment = document.getElementById('has-attachment').value === 'true';
-            
+
+            const recipient = document.getElementById('recipient').value;  // 獲取收件者信箱
+            const subject = document.getElementById('subject').value;  // 獲取郵件標題
+            const content = document.getElementById('content').value;  // 獲取郵件內容
+            const hasAttachment = document.getElementById('has-attachment').value === 'true';  // 檢查是否有附件
+
             // 獲取用戶選擇的資訊
-            const includeTsmc = document.getElementById('include_tsmc').checked;
-            const includeInvoice = document.getElementById('include_invoice').checked;
-            const includeCurrency = document.getElementById('include_currency').checked;
-            
-            document.getElementById('email-result').innerText = "正在發送郵件...";
-            
-            fetch('/send_email', {
+            const includeTsmc = document.getElementById('include_tsmc').checked;  // 檢查台積電資訊
+            const includeInvoice = document.getElementById('include_invoice').checked;  // 檢查發票資訊
+            const includeCurrency = document.getElementById('include_currency').checked;  // 檢查匯率資訊
+
+            document.getElementById('email-result').innerText = "正在發送郵件...";  // 顯示發送中的狀態訊息
+
+            fetch('/send_email', {  // 向伺服器發送 POST 請求到 /send_email
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    recipient: recipient,
-                    subject: subject,
-                    content: content,
-                    attachment: hasAttachment,
-                    include_tsmc: includeTsmc,
-                    include_invoice: includeInvoice,
-                    include_currency: includeCurrency
+                body: JSON.stringify({  // 將所有郵件資料轉換為 JSON 格式
+                    recipient: recipient,  // 收件者信箱
+                    subject: subject,  // 郵件標題
+                    content: content,  // 郵件內容
+                    attachment: hasAttachment,  // 是否有附件
+                    include_tsmc: includeTsmc,  // 是否包含台積電資訊
+                    include_invoice: includeInvoice,  // 是否包含發票資訊
+                    include_currency: includeCurrency  // 是否包含匯率資訊
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('email-result').innerText = data.result;
-            })
-            .catch(error => {
-                console.error('Error sending email:', error);
-                document.getElementById('email-result').innerText = "發送郵件時發生錯誤，請稍後再試";
-            });
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('email-result').innerText = data.result;
+                })
+                .catch(error => {
+                    console.error('Error sending email:', error);
+                    document.getElementById('email-result').innerText = "發送郵件時發生錯誤，請稍後再試";
+                });
         }
     </script>
     <style>
-        body {
+        /* 基本樣式設定 */
+        body { /* 網頁主體 */
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
         }
-        .section {
+
+        .section {  /* 每個區塊的樣式 */
             margin-bottom: 30px;
             padding: 15px;
-            border: 1px solid #ddd;
+            border: 1px solid #ddd;  /* 邊框樣式 */
             border-radius: 8px;
         }
-        button {
+
+        button { /* 按鈕樣式 */
             background-color: #4CAF50;
             color: white;
             padding: 10px 15px;
             border: none;
             border-radius: 4px;
-            cursor: pointer;
+            cursor: pointer; /* 鼠標懸停時變成手型 */
         }
-        button:hover {
+
+        button:hover { /* 按鈕懸停效果 */
             background-color: #45a049;
         }
+
         /* 統一所有輸入框樣式 */
-        input[type=text], input[type=email], textarea {
+        input[type=text],   /* 文本輸入框 */
+        input[type=email],  /* 郵件輸入框 */
+        textarea {  /* 多行文本輸入框 */
             padding: 8px;
             margin: 5px 0;
             border: 1px solid #ccc;
@@ -137,80 +155,85 @@
             width: 100%;
             box-sizing: border-box;
         }
-        .form-group {
+
+        .form-group {  /* 表單組的樣式 */
             margin-bottom: 15px;
         }
-        #attachment-preview {
+
+        #attachment-preview {  /* 附件預覽區塊 */
             margin-top: 10px;
             max-width: 300px;
-            display: none;
+            display: none;  /* 預設隱藏附件預覽 */
         }
-        #attachment-preview img {
+
+        #attachment-preview img {  /* 附件預覽中圖片樣式 */
             width: 100%;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
     </style>
 </head>
-<body>
+<!-- 網頁主體 -->
+<body> 
     <h2>這是數值分析與演算的期末作業</h2>
-    <div class="section">
+    <div class="section">  <!-- 設定台積電股票資訊區塊 -->
         <h3>台積電股票資訊</h3>
-        <button onclick="fetchTSMCData()">獲取台積電股票資訊</button>
-        <p id="tsmc-info"></p> <!-- 顯示台積電股票資訊 -->
+        <button onclick="fetchTSMCData()">獲取台積電股票資訊</button>  <!-- 按鈕 -->
+        <p id="tsmc-info"></p>  <!-- 顯示台積電股票資訊，初始為空 -->
     </div>
-    
-    <div class="section">
+
+    <div class="section">  <!-- 設定發票檢查區塊 -->
         <h3>發票檢查功能</h3>
-        <form id="invoice-form" onsubmit="checkInvoice(event)">
+        <form id="invoice-form" onsubmit="checkInvoice(event)">  <!-- 發票檢查表單，提交時執行 checkInvoice 函式 -->
             <div class="form-group">
-                <label for="invoice_number">請輸入發票號碼:</label>
-                <input type="text" id="invoice_number" name="invoice_number" required>
+                <label for="invoice_number">請輸入發票號碼:</label>  <!-- 發票號碼輸入標籤 -->
+                <input type="text" id="invoice_number" name="invoice_number" required>  <!-- 發票號碼輸入框，設為必填 -->
             </div>
             <button type="submit">檢查發票</button>
         </form>
-        <p id="invoice-result"></p> <!-- 顯示發票檢查結果 -->
+        <p id="invoice-result"></p> <!-- 顯示發票檢查結果，初始為空 -->
+        <p id="invoice-period"></p> <!-- 顯示發票期別，初始為空 -->
     </div>
-    
-    <div class="section">
+
+    <div class="section">  <!-- 設定即時匯率資訊區塊 -->
         <h3>即時匯率資訊</h3>
         <button onclick="fetchCurrencyRate()">獲取最新匯率</button>
         <p id="currency-result" style="white-space: pre-line;"></p> <!-- 顯示匯率結果，保留換行 -->
     </div>
-    
-    <div class="section">
+
+    <div class="section">  <!-- 設定電子郵件發送區塊 -->
         <h3>發送電子郵件</h3>
-        <form id="email-form" onsubmit="sendEmail(event)">
+        <form id="email-form" onsubmit="sendEmail(event)">  <!-- 郵件發送表單，提交時執行 sendEmail 函式 -->
             <div class="form-group">
                 <label for="recipient">收件者信箱:</label>
-                <input type="email" id="recipient" name="recipient" required>
+                <input type="email" id="recipient" name="recipient" required>  <!-- 收件者信箱輸入框，設為必填 -->
             </div>
             <div class="form-group">
                 <label for="subject">郵件標題:</label>
-                <input type="text" id="subject" name="subject" required>
+                <input type="text" id="subject" name="subject" required>  <!-- 郵件標題輸入框，設為必填 -->
             </div>
             <div class="form-group">
                 <label for="content">郵件內容:</label>
-                <textarea id="content" name="content" rows="5" required></textarea>
+                <textarea id="content" name="content" rows="5" required></textarea>  <!-- 郵件內容文字區域，設為 5 行高且設為必填 -->
             </div>
             <div class="form-group">
-                <button type="button" id="attachment-btn" onclick="toggleAttachment()">添加附件</button>
-                <input type="hidden" id="has-attachment" value="false">
-                <div id="attachment-preview">
+                <button type="button" id="attachment-btn" onclick="toggleAttachment()">添加附件</button>  <!-- 附件按鈕，點擊時執行 toggleAttachment 函式 -->
+                <input type="hidden" id="has-attachment" value="false">  <!-- 隱藏欄位，用於標記是否有附件 -->
+                <div id="attachment-preview">  <!-- 附件預覽區塊，初始為隱藏 -->
                     <p>附件預覽：</p>
-                    <img src="https://hobbiesfun.com/wp-content/uploads/2023/10/Adorable-Kitten.jpg" alt="附件圖片">
+                    <img src="https://hobbiesfun.com/wp-content/uploads/2023/10/Adorable-Kitten.jpg" alt="附件圖片">  <!-- 附件圖片預覽 -->
                 </div>
             </div>
             <div class="form-group">
-                <input type="checkbox" id="include_tsmc" name="include_tsmc" checked>
-                <label for="include_tsmc">包含台積電資訊</label>
+                <input type="checkbox" id="include_tsmc" name="include_tsmc" checked>  <!-- 包含台積電資訊的勾選框，預設勾選 -->
+                <label for="include_tsmc">包含台積電資訊</label>  <!-- 勾選框的標籤 -->
             </div>
             <div class="form-group">
-                <input type="checkbox" id="include_invoice" name="include_invoice" checked>
+                <input type="checkbox" id="include_invoice" name="include_invoice" checked>  <!-- 包含發票資訊的勾選框，預設勾選 -->
                 <label for="include_invoice">包含發票資訊</label>
             </div>
             <div class="form-group">
-                <input type="checkbox" id="include_currency" name="include_currency" checked>
+                <input type="checkbox" id="include_currency" name="include_currency" checked>  <!-- 包含匯率資訊的勾選框，預設勾選 -->
                 <label for="include_currency">包含匯率資訊</label>
             </div>
             <button type="submit">發送郵件</button>
@@ -218,4 +241,5 @@
         <p id="email-result"></p> <!-- 顯示郵件發送結果 -->
     </div>
 </body>
+
 </html>

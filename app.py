@@ -1,38 +1,36 @@
 from flask import Flask
 from flask import render_template  # 引入render_template函式，用於渲染HTML模板
 from flask import jsonify  # 引入jsonify函式，用於返回JSON格式的響應
-from flask import request  # 確保引入 request
-import requests
-from bs4 import BeautifulSoup
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart  
-from email.mime.application import MIMEApplication
+from flask import request  # 導入request物件，用於處理HTTP請求的資料（如表單資料、JSON資料等）
+import requests  # 導入requests函式庫，用於發送HTTP請求到外部網站
+from bs4 import BeautifulSoup  # 導入BeautifulSoup類別，用於解析和處理HTML內容
+import smtplib  # 導入smtplib函式庫，用於發送SMTP電子郵件
+from email.mime.text import MIMEText  # 導入MIMEText類別，用於建立純文字或HTML格式的郵件內容
+from email.mime.multipart import MIMEMultipart  # 導入MIMEMultipart類別，用於建立包含多個部分的郵件（如文字+附件）
+from email.mime.application import MIMEApplication  # 導入MIMEApplication類別，用於處理郵件附件（如圖片、檔案等）
 
-app = Flask(__name__) #__name__代表目前執行的模組
+app = Flask(__name__)  # __name__代表目前執行的模組
 
-@app.route('/') # 函式的裝飾 (decorator):以函式為基礎，提供附加功能
+@app.route('/')  # 函式的裝飾 (decorator):以函式為基礎，提供附加功能
 def home():
-    return render_template("index.html")
+    return render_template("index.html")  # 回傳index.html模板檔案給瀏覽器
     # return 'Hello, Flask!'
 
-@app.route('/test') # 路由設定，當訪問/test時，會執行test函式
+@app.route('/test')  # 路由設定，當訪問/test時，會執行test函式
 def test():
     return 'This is a test page.'
 
-@app.route("/get_tsmc_data", methods=["GET"])
+@app.route("/get_tsmc_data", methods=["GET"])  # 定義路由，處理GET請求到'/get_tsmc_data'
 def get_tsmc_data():
     # 抓取台積電股票資訊
     url = 'https://tw.stock.yahoo.com/quote/2330'  # 台積電的股票
     web = requests.get(url, timeout=10)  # 設定超時時間為 10 秒
     soup = BeautifulSoup(web.text, 'html.parser')  # 轉換為 BeautifulSoup 物件
-
     title = soup.find('h1')  # 取得網頁標題
     a = soup.select('.Fz\\(32px\\)')[0]  # 取得股價
     b = soup.select('.Fz\\(20px\\)')[0]  # 取得漲跌幅
-
     s = ''  # 漲或跌的情況
-
+    
     try:
         # 判斷是否為下跌(紅字)
         if soup.select('#main-0-QuoteHeader-Proxy .C\\(\\$c-fuji-down\\)'):
@@ -45,28 +43,30 @@ def get_tsmc_data():
             s = '+'
     except:
         pass
-
     if s == '':
         s = '-'  # 如果沒有漲跌情況，則預設為 '-'
-
     stock_info = f"{title.get_text()} : {a.get_text()}( {s}{b.text} )"
     return jsonify({"stock_info": stock_info})
 
-@app.route("/invoice-check", methods=["POST"])
+@app.route("/invoice-check", methods=["POST"])  # 定義路由，處理POST請求到'/invoice-check'
 def invoice_check():
-    data = request.get_json()
+    data = request.get_json()  # 從請求中獲取JSON格式的資料
     num = data.get("invoice_number", "")
-    
-    url = 'https://invoice.etax.nat.gov.tw/index.html'
+    url = 'https://invoice.etax.nat.gov.tw/index.html'  # 設定財政部發票對獎網站的網址
     result = ""
+    period = "未知期別"  # 預設期別 加入期別變數
     
     try:
-        web = requests.get(url, timeout=10)
-        web.raise_for_status()
+        web = requests.get(url, timeout=10)  # 發送GET請求到發票網站，設定超時時間為 10 秒
+        web.raise_for_status()  # 檢查HTTP請求是否成功（狀態碼200等）
         web.encoding = 'utf-8'
         
         soup = BeautifulSoup(web.text, 'html.parser')
         td = soup.select('.container-fluid')[0].select('.etw-tbiggest')
+
+        period_info = soup.select('.etw-on[title]')  # 獲取期別資訊
+        period = period_info[0].text.strip() if period_info else "本期"
+
         ns = td[0].getText()     # 特別獎號碼
         n1 = td[1].getText()     # 特獎號碼
         n2 = [td[2].getText()[-8:], td[3].getText()[-8:], td[4].getText()[-8:]]  # 頭獎號碼
@@ -106,7 +106,7 @@ def invoice_check():
                     break
             if not match:
                 result = "很遺憾，您的發票號碼沒有中獎。"
-                
+    # 如果請求失敗，返回錯誤訊息            
     except requests.exceptions.RequestException as e:
         result = f"發生錯誤: {e}"
         return jsonify({"result": result, "error": str(e)})
@@ -121,8 +121,7 @@ def get_currency_rate():
         rate = requests.get(url, timeout=10) 
         rate.encoding = 'utf-8'  # 設定編碼為 utf-8
         rt = rate.text  # 以文字模式讀取內容
-        rts = rt.split('\n')  # 以換行符號分割成列表
-        
+        rts = rt.split('\n')  # 以換行符號分割成列表    
         currency_rates = []
         
         # 跳過標題行
@@ -139,10 +138,9 @@ def get_currency_rate():
                 
         result = "\n".join(currency_rates)
         if not result:
-            result = "無法獲取匯率資料或資料格式有誤"
-            
+            result = "無法獲取匯率資料或資料格式有誤"    
         return jsonify({"result": result})
-        
+    # 如果請求失敗，返回錯誤訊息
     except requests.exceptions.RequestException as e:
         return jsonify({"result": f"連線失敗: {e}"})     
 
@@ -209,7 +207,8 @@ def send_email():
                 soup = BeautifulSoup(web.text, 'html.parser')
                 td = soup.select('.container-fluid')[0].select('.etw-tbiggest')
                 
-                period_info = soup.select('.font-weight-bold.etw-on.mb-3')
+                # 嘗試提取期別資訊
+                period_info = soup.select('.etw-on[title]')
                 period = period_info[0].text.strip() if period_info else "本期"
                 
                 ns = td[0].getText()     # 特別獎號碼
@@ -245,13 +244,13 @@ def send_email():
                 additional_info.append(f"<h2>最新匯率資訊</h2><p>{currency_html}</p>")
             except:
                 additional_info.append("<h2>最新匯率資訊</h2><p>無法獲取匯率資訊</p>")
-        
+
         if additional_info:
             html += "<hr><h2>附加資訊</h2>" + "".join(additional_info)
         
         html += """<div style="margin-top: 20px; color: gray;">此郵件由數值分析與演算期末作業網站發送</div>"""
 
-        msg = MIMEMultipart()
+        msg = MIMEMultipart()  # 建立多部分郵件
         msg.attach(MIMEText(html, "html", "utf-8"))  # 設定編碼為 utf-8
         
         # 添加貓咪圖片附件
@@ -259,14 +258,15 @@ def send_email():
             # 從網路下載圖片
             image_url = "https://hobbiesfun.com/wp-content/uploads/2023/10/Adorable-Kitten.jpg"
             try:
-                img_response = requests.get(image_url, timeout=10)
+                img_response = requests.get(image_url, timeout=10)  # 設定超時時間為 10 秒
                 img_response.raise_for_status()  # 確保請求成功
                 img_data = img_response.content
                 
                 # 添加圖片作為附件
-                attach_file = MIMEApplication(img_data, name="cute_cat.jpg")
+                attach_file = MIMEApplication(img_data, name="cute_cat.jpg")  # 設定附件名稱
+                # 設定附件的 Content-Disposition 標頭
                 attach_file.add_header('Content-Disposition', 'attachment', filename="cute_cat.jpg")
-                msg.attach(attach_file)
+                msg.attach(attach_file)  # 將圖片附件添加到郵件中
             except Exception as e:
                 print(f"獲取圖片失敗: {e}")
 
@@ -289,14 +289,17 @@ def send_email():
         if include_currency: attachments.append("匯率資訊")
         if attachment: attachments.append("貓咪圖片")
         
+        # 如果有附件，則在回應中包含附件訊息
         attach_msg = ""
+        # 如果有任何附件或附加資訊
         if attachments:
-            attach_msg = f"（已附加：{', '.join(attachments)}）"
-            
+            # 組合附件說明訊息
+            attach_msg = f"（已附加：{', '.join(attachments)}）"  # 將附件資訊轉為字串
+        # 回傳成功發送的JSON回應    
         return jsonify({"result": f"郵件已成功發送至 {recipient} {attach_msg}"})
         
     except Exception as e:
         return jsonify({"result": f"發送郵件時發生錯誤: {str(e)}"})
 
 if __name__ == '__main__':
-    app.run(debug=True) # debug=True 代表開啟除錯模式，會自動重啟伺服器
+    app.run(debug=True)  # debug=True 代表開啟除錯模式，會自動重啟伺服器
