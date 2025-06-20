@@ -64,7 +64,7 @@ def invoice_check():
         soup = BeautifulSoup(web.text, 'html.parser')
         td = soup.select('.container-fluid')[0].select('.etw-tbiggest')
 
-        period_info = soup.select('.etw-on[title]')  # 獲取期別資訊
+        period_info = soup.select('ul.etw-submenu01 > li > a.etw-on[title]')  # 獲取期別資訊
         period = period_info[0].text.strip() if period_info else "本期"
 
         ns = td[0].getText()     # 特別獎號碼
@@ -208,7 +208,7 @@ def send_email():
                 td = soup.select('.container-fluid')[0].select('.etw-tbiggest')
                 
                 # 嘗試提取期別資訊
-                period_info = soup.select('.etw-on[title]')
+                period_info = soup.select('ul.etw-submenu01 > li > a.etw-on[title]')
                 period = period_info[0].text.strip() if period_info else "本期"
                 
                 ns = td[0].getText()     # 特別獎號碼
