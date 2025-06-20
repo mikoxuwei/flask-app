@@ -155,6 +155,11 @@ def send_email():
     content = data.get("content", "")
     attachment = data.get("attachment", False)
     
+    # 獲取選擇的資訊
+    include_tsmc = data.get("include_tsmc", False)
+    include_invoice = data.get("include_invoice", False)
+    include_currency = data.get("include_currency", False)
+    
     # 驗證輸入
     if not recipient or not subject or not content:
         return jsonify({"result": "錯誤：收件者、標題和內容都必須填寫"})
@@ -164,16 +169,95 @@ def send_email():
         html = f"""
         <h1>{subject}</h1>
         <div>{content}</div>
-        <div style="margin-top: 20px; color: gray;">此郵件由數值分析與演算期末作業網站發送</div>
         """
+        
+        # 添加選擇的資訊到郵件正文
+        additional_info = []
+        
+        if include_tsmc:
+            try:
+                # 直接獲取台積電資料，而不是呼叫 API 端點
+                url = 'https://tw.stock.yahoo.com/quote/2330'
+                web = requests.get(url, timeout=10)
+                soup = BeautifulSoup(web.text, 'html.parser')
+                title = soup.find('h1')
+                a = soup.select('.Fz\\(32px\\)')[0]
+                b = soup.select('.Fz\\(20px\\)')[0]
+                s = ''
+                try:
+                    if soup.select('#main-0-QuoteHeader-Proxy .C\\(\\$c-fuji-down\\)'):
+                        s = '-'
+                except: pass
+                try:
+                    if soup.select('#main-0-QuoteHeader-Proxy .C\\(\\$c-fuji-up\\)'):
+                        s = '+'
+                except: pass
+                if s == '': s = '-'
+                
+                tsmc_data = f"{title.get_text()} : {a.get_text()}( {s}{b.text} )"
+                additional_info.append(f"<h2>台積電股價資訊</h2><p>{tsmc_data}</p>")
+            except:
+                additional_info.append("<h2>台積電股價資訊</h2><p>無法獲取台積電股價</p>")
+
+        if include_invoice:
+            try:
+                # 直接獲取發票資料
+                url = 'https://invoice.etax.nat.gov.tw/index.html'
+                web = requests.get(url, timeout=10)
+                web.encoding = 'utf-8'
+                
+                soup = BeautifulSoup(web.text, 'html.parser')
+                td = soup.select('.container-fluid')[0].select('.etw-tbiggest')
+                
+                period_info = soup.select('.font-weight-bold.etw-on.mb-3')
+                period = period_info[0].text.strip() if period_info else "本期"
+                
+                ns = td[0].getText()     # 特別獎號碼
+                n1 = td[1].getText()     # 特獎號碼
+                n2 = [td[2].getText()[-8:], td[3].getText()[-8:], td[4].getText()[-8:]]  # 頭獎號碼
+                
+                invoice_data = f"{period}<br>特別獎: {ns} (獎金1000萬元)<br>特獎: {n1} (獎金200萬元)<br>頭獎: {n2[0]}, {n2[1]}, {n2[2]} (獎金20萬元)"
+                additional_info.append(f"<h2>發票兌獎資訊</h2><p>{invoice_data}</p>")
+            except Exception as e:
+                additional_info.append(f"<h2>發票兌獎資訊</h2><p>無法獲取發票兌獎號碼: {str(e)}</p>")
+
+        if include_currency:
+            try:
+                # 直接獲取匯率資料
+                url = 'https://rate.bot.com.tw/xrt/flcsv/0/day'
+                rate = requests.get(url, timeout=10)
+                rate.encoding = 'utf-8'
+                rt = rate.text
+                rts = rt.split('\n')
+                
+                currency_rates = []
+                for i in rts[1:10]:
+                    try:
+                        a = i.split(',')
+                        if len(a) >= 13:
+                            currency_name = a[0]
+                            buying_rate = a[2]
+                            selling_rate = a[12]
+                            currency_rates.append(f"{currency_name}: 買入 {buying_rate}, 賣出 {selling_rate}")
+                    except: continue
+                    
+                currency_html = "<br>".join(currency_rates)
+                additional_info.append(f"<h2>最新匯率資訊</h2><p>{currency_html}</p>")
+            except:
+                additional_info.append("<h2>最新匯率資訊</h2><p>無法獲取匯率資訊</p>")
+        
+        if additional_info:
+            html += "<hr><h2>附加資訊</h2>" + "".join(additional_info)
+        
+        html += """<div style="margin-top: 20px; color: gray;">此郵件由數值分析與演算期末作業網站發送</div>"""
 
         msg = MIMEMultipart()
         msg.attach(MIMEText(html, "html", "utf-8"))  # 設定編碼為 utf-8
         
-        # 添加附件 (如果用戶選擇了附件)
+        # 添加貓咪圖片附件
         if attachment:
             # 從網路下載圖片
-            image_url = "https://i.pinimg.com/736x/b2/8a/14/b28a142abd680bd4506b5769bfc031d7.jpg"
+            image_url = "https://hobbiesfun.com/wp-content/uploads/2023/10/Adorable-Kitten.jpg"
             try:
                 img_response = requests.get(image_url, timeout=10)
                 img_response.raise_for_status()  # 確保請求成功
@@ -185,14 +269,6 @@ def send_email():
                 msg.attach(attach_file)
             except Exception as e:
                 print(f"獲取圖片失敗: {e}")
-                # 如果無法獲取線上圖片，嘗試使用本地圖片
-                try:
-                    with open("send_mail/cat.jpg", "rb") as file:
-                        img = file.read()
-                    attach_file = MIMEApplication(img, name="cat.jpg")
-                    msg.attach(attach_file)
-                except:
-                    pass  # 如果本地圖片也失敗，則不添加附件
 
         msg["From"] = "s2525123a@gmail.com"  # 寄件者
         msg["To"] = recipient  # 收件者
@@ -206,7 +282,17 @@ def send_email():
         status = smtp.sendmail(msg["From"], msg["To"], msg.as_string())  # 發送郵件
         smtp.quit()  # 關閉 SMTP 連線
         
-        attach_msg = "（已附加可愛貓咪圖片）" if attachment else ""
+        # 準備回應訊息
+        attachments = []
+        if include_tsmc: attachments.append("台積電股價")
+        if include_invoice: attachments.append("發票兌獎號碼")
+        if include_currency: attachments.append("匯率資訊")
+        if attachment: attachments.append("貓咪圖片")
+        
+        attach_msg = ""
+        if attachments:
+            attach_msg = f"（已附加：{', '.join(attachments)}）"
+            
         return jsonify({"result": f"郵件已成功發送至 {recipient} {attach_msg}"})
         
     except Exception as e:

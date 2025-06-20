@@ -63,13 +63,19 @@
             }
         }
         
+        // 修改 sendEmail 函數
         function sendEmail(event) {
             event.preventDefault(); // 防止表單提交刷新頁面
-            
+        
             const recipient = document.getElementById('recipient').value;
             const subject = document.getElementById('subject').value;
             const content = document.getElementById('content').value;
             const hasAttachment = document.getElementById('has-attachment').value === 'true';
+            
+            // 獲取用戶選擇的資訊
+            const includeTsmc = document.getElementById('include_tsmc').checked;
+            const includeInvoice = document.getElementById('include_invoice').checked;
+            const includeCurrency = document.getElementById('include_currency').checked;
             
             document.getElementById('email-result').innerText = "正在發送郵件...";
             
@@ -82,7 +88,10 @@
                     recipient: recipient,
                     subject: subject,
                     content: content,
-                    attachment: hasAttachment
+                    attachment: hasAttachment,
+                    include_tsmc: includeTsmc,
+                    include_invoice: includeInvoice,
+                    include_currency: includeCurrency
                 })
             })
             .then(response => response.json())
@@ -191,6 +200,18 @@
                     <p>附件預覽：</p>
                     <img src="https://i.pinimg.com/736x/b2/8a/14/b28a142abd680bd4506b5769bfc031d7.jpg" alt="附件圖片">
                 </div>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="include_tsmc" name="include_tsmc" checked>
+                <label for="include_tsmc">包含台積電資訊</label>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="include_invoice" name="include_invoice" checked>
+                <label for="include_invoice">包含發票資訊</label>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="include_currency" name="include_currency" checked>
+                <label for="include_currency">包含匯率資訊</label>
             </div>
             <button type="submit">發送郵件</button>
         </form>
