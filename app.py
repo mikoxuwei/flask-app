@@ -4,6 +4,10 @@ from flask import jsonify  # 引入jsonify函式，用於返回JSON格式的響�
 from flask import request  # 確保引入 request
 import requests
 from bs4 import BeautifulSoup
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart  
+from email.mime.application import MIMEApplication
 
 app = Flask(__name__) #__name__代表目前執行的模組
 
@@ -141,6 +145,56 @@ def get_currency_rate():
         
     except requests.exceptions.RequestException as e:
         return jsonify({"result": f"連線失敗: {e}"})     
+
+@app.route("/send_email", methods=["POST"])
+def send_email():
+    # 獲取表單提交的資料
+    data = request.get_json()
+    recipient = data.get("recipient", "")
+    subject = data.get("subject", "")
+    content = data.get("content", "")
+    
+    # 驗證輸入
+    if not recipient or not subject or not content:
+        return jsonify({"result": "錯誤：收件者、標題和內容都必須填寫"})
+    
+    try:
+        # 建立郵件內容
+        html = f"""
+        <h1>{subject}</h1>
+        <div>{content}</div>
+        <div style="margin-top: 20px; color: gray;">此郵件由數值分析與演算期末作業網站發送</div>
+        """
+
+        msg = MIMEMultipart()
+        msg.attach(MIMEText(html, "html", "utf-8"))  # 設定編碼為 utf-8
+        
+        # 添加附件 (可選)
+        try:
+            with open("send_mail/cat.jpg", "rb") as file:
+                img = file.read()
+            attach_file = MIMEApplication(img, name="cat.jpg")  # 設定附件名稱
+            msg.attach(attach_file)
+        except:
+            # 如果找不到附件，忽略錯誤
+            pass
+
+        msg["From"] = "s2525123a@gmail.com"  # 寄件者
+        msg["To"] = recipient  # 收件者
+        msg["Subject"] = subject  # 郵件標題
+
+        # Gmail SMTP 設定
+        smtp = smtplib.SMTP("smtp.gmail.com", 587)
+        smtp.ehlo()  # 啟動 SMTP 服務
+        smtp.starttls()  # 啟用 TLS
+        smtp.login("s2525123a@gmail.com", "vvgy txxr bqcc nyox")  # 登入 Gmail
+        status = smtp.sendmail(msg["From"], msg["To"], msg.as_string())  # 發送郵件
+        smtp.quit()  # 關閉 SMTP 連線
+        
+        return jsonify({"result": f"郵件已成功發送至 {recipient}"})
+        
+    except Exception as e:
+        return jsonify({"result": f"發送郵件時發生錯誤: {str(e)}"})
 
 if __name__ == '__main__':
     app.run(debug=True) # debug=True 代表開啟除錯模式，會自動重啟伺服器
