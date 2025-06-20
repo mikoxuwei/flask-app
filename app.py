@@ -64,8 +64,21 @@ def invoice_check():
         soup = BeautifulSoup(web.text, 'html.parser')
         td = soup.select('.container-fluid')[0].select('.etw-tbiggest')  # 中獎號碼位置
 
-        period_info = soup.select('.etw-on[title]')  # 獲取期別資訊
-        period = period_info[0].getText().strip() if period_info else "本期"
+        # 獲取期別資訊
+        try:
+            period_info = soup.select('.etw-on')  # 移除 [title] 屬性選擇器
+            if period_info:
+                period = period_info[0].getText().strip()
+            else:
+                # 嘗試其他可能的選擇器
+                period_alt = soup.select('.container-fluid .etw-on')
+                if period_alt:
+                    period = period_alt[0].getText().strip()
+                else:
+                    period = "本期"  # 如果都找不到，設為預設值
+        except Exception as e:
+            print(f"獲取期別資訊時發生錯誤: {e}")
+            period = "本期"
 
         ns = td[0].getText()     # 特別獎號碼
         n1 = td[1].getText()     # 特獎號碼
@@ -109,9 +122,9 @@ def invoice_check():
     # 如果請求失敗，返回錯誤訊息            
     except requests.exceptions.RequestException as e:
         result = f"發生錯誤: {e}"
-        return jsonify({"result": result, "error": str(e)})
-    
-    return jsonify({"result": result})
+        return jsonify({"result": result, "period": period, "error": str(e)})
+
+    return jsonify({"result": result, "period": period})
 
 @app.route("/get_currency_rate", methods=["GET"])
 def get_currency_rate():
@@ -207,9 +220,21 @@ def send_email():
                 soup = BeautifulSoup(web.text, 'html.parser')
                 td = soup.select('.container-fluid')[0].select('.etw-tbiggest')
                 
-                # 嘗試提取期別資訊
-                period_info = soup.select('.etw-on[title]')
-                period = period_info[0].getText().strip() if period_info else "本期"
+                # 獲取期別資訊
+                try:
+                    period_info = soup.select('.etw-on')  # 移除 [title] 屬性選擇器
+                    if period_info:
+                        period = period_info[0].getText().strip()
+                    else:
+                        # 嘗試其他可能的選擇器
+                        period_alt = soup.select('.container-fluid .etw-on')
+                        if period_alt:
+                            period = period_alt[0].getText().strip()
+                        else:
+                            period = "本期"  # 如果都找不到，設為預設值
+                except Exception as e:
+                    print(f"獲取期別資訊時發生錯誤: {e}")
+                    period = "本期"
 
                 ns = td[0].getText()     # 特別獎號碼
                 n1 = td[1].getText()     # 特獎號碼
